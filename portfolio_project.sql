@@ -76,18 +76,36 @@ Order by 1,2,3;
 
 -- Calculation Number of new vaccination on basis of date and Country
 
-Select Death.continent, death.location, death.Date , Death.population , vacc.new_vaccinations, Sum(vacc.new_vaccinations) Over (partition by Death.LOCATION order by Death.location)
+Select Death.continent, death.location, death.Date , Death.population , vacc.new_vaccinations, Sum(vacc.new_vaccinations) Over (partition by Death.LOCATION order by Death.location) as people_vaccinated_cumilative
 From Covid_Death Death 
 JOIN covid_vaccinations vacc 
 ON Death.location = vacc.Location
 Order by 1,2,3;  
 
+-- Using CTE to perform Calculation on Partition By in previous query
+
+With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, people_vaccinated_cumilative)
+as
+(
+Select death.continent, death.location, death.date, death.population, vacc.new_vaccinations
+, SUM(vac.new_vaccinations) OVER (Partition by dea.Location Order by dea.location, dea.Date) as people_vaccinated_cumilative,
+ (people_vaccinated_cumilative/population)*100
+From Covid_Death Death 
+JOIN covid_vaccinations vacc 
+ON Death.location = vacc.Location
+where dea.continent is not null 
+
+)
+Select *, (people_vaccinated_cumilative/Population)*100
+From PopvsVac;
+
+
+
 -- Creating View for visuals
 
-Create View percentage_People_vaccianted AS
+Create View people_vaccinated_cumilative AS
 Select Death.continent, death.location, death.Date , Death.population ,  (Vacc.total_vaccinations/Vacc.population)*100 AS vaccination_Percentage
 From Covid_Death Death 
 JOIN covid_vaccinations vacc 
 ON Death.location = vacc.Location;
-
 
